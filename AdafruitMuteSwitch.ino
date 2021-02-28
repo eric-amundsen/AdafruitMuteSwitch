@@ -16,10 +16,45 @@
 #define HAND_SWITCH  6
 
 //////////////////////////////////////////////////////////////////////
+// MASKS
+
+// OS
+#define WINDOWS 0x100
+#define MAC     0x200
+
+// APP
+#define TEAMS 0x1000
+#define ZOOM  0x2000
+
+// MODIFIER
+#define SHIFT_MASK  0x001
+#define CTRL_MASK   0x002
+#define ALT_MASK    0x004
+#define GUI_MASK    0x008
+
+//////////////////////////////////////////////////////////////////////
 // CHARACTER DEFINITION
-#define AMUTE_CHAR 'm'
-#define VMUTE_CHAR 'o'
-#define  HAND_CHAR 'k'
+//
+// Windows
+//   Teams
+#define WIN_TEAMS_AMUTE_MOD  SHIFT | CTRL
+#define WIN_TEAMS_VMUTE_MOD  SHIFT | CTRL
+#define WIN_TEAMS_HAND_MOD   SHIFT | CTRL
+
+#define WIN_TEAMS_AMUTE_CHAR 'm'
+#define WIN_TEAMS_VMUTE_CHAR 'o'
+#define WIN_TEAMS_HAND_CHAR  'k'
+
+//   Zoom
+#define WIN_TEAMS_AMUTE_MOD  ALT
+#define WIN_TEAMS_VMUTE_CHAR ALT
+#define WIN_TEAMS_HAND_CHAR  ALT
+
+#define WIN_TEAMS_AMUTE_CHAR 'a'
+#define WIN_TEAMS_VMUTE_CHAR 'o'
+#define WIN_TEAMS_HAND_CHAR  'y'
+
+// Mac
 
 //////////////////////////////////////////////////////////////////////
 // states to keep track of pin state and create action during transition
@@ -69,6 +104,34 @@ int buttonState(  // return 1 when in XFER state, 0 otherwise
   return (rv);
 }
 
+// press modifier keys and write character
+void sendToggle(char chr, int modifier) {
+
+  if (SHIFT_MASK & modifier)  Keyboard.press(KEY_LEFT_SHIFT);
+  if (CTRL_MASK  & modifier)  Keyboard.press(KEY_LEFT_CTRL);
+  if (ALT_MASK   & modifier)  Keyboard.press(KEY_LEFT_ALT);
+  if (GUI_MASK   & modifier)  Keyboard.press(KEY_LEFT_GUI);
+  Keyboard.write(chr);
+  delay(250);
+  Keyboard.releaseAll();
+}
+
+// call state machine and if return 1 send character
+void checkSwitch(int swtch, char chr, int modifier, states *s_ptr) {
+  if (buttonState(swtch, s_ptr)) {
+    sendToggle(chr, modifier);
+  }
+}
+
+// check the switch for windows/mac os
+int checkOS() {
+  return WINDOWS;
+}
+
+int checkApp() {
+  return TEAMS;
+}
+
 void setup() {
 
   Keyboard.begin();
@@ -79,32 +142,28 @@ void setup() {
 
 }
 
-// press modifier keys and write character
-void sendToggle(char chr, int shift, int ctrl, int alt, int gui) {
-
-  if (shift) Keyboard.press(KEY_LEFT_SHIFT);
-  if (ctrl)  Keyboard.press(KEY_LEFT_CTRL);
-  if (alt)   Keyboard.press(KEY_LEFT_ALT);
-  if (gui)   Keyboard.press(KEY_LEFT_GUI);
-  Keyboard.write(chr);
-  delay(250);
-  Keyboard.releaseAll();
-}
-
-// call state machine and if return 1 send character
-void checkSwitch(int swtch, char chr, states *s_ptr) {
-  if (buttonState(swtch, s_ptr)) {
-    sendToggle(chr, 1, 1, 0, 0);  // TODO this assumes all characters use shift-ctrl modifier,
-                                  // find elegant way to not do this
-  }
-}
-
-
 void loop() {
 
-  checkSwitch(AMUTE_SWITCH, AMUTE_CHAR, &amute_state);
-  checkSwitch(VMUTE_SWITCH, VMUTE_CHAR, &vmute_state);
-  checkSwitch( HAND_SWITCH,  HAND_CHAR, &hand_state);
+  int amute_char, amute_mod;
+  int vmute_char, vmute_mod;
+  int  hand_char,  hand_mod;
+
+  if (checkOS() == WINDOWS) {
+
+    if (checkApp() == TEAMS) {
+      amute_char = WIN_TEAMS_AMUTE_CHAR;
+      vmute_char = WIN_TEAMS_VMUTE_CHAR;
+       hand_char = WIN_TEAMS_HAND_CHAR;
+
+      amute_mod = WIN_TEAMS_AMUTE_MOD;
+      vmute_mod = WIN_TEAMS_VMUTE_MOD;
+       hand_mod = WIN_TEAMS_HAND_MOD;
+     }
+  }
+
+  checkSwitch(AMUTE_SWITCH, amute_char, amute_mod, &amute_state);
+  checkSwitch(VMUTE_SWITCH, vmute_char, vmute_mod, &vmute_state);
+  checkSwitch( HAND_SWITCH,  hand_char,  hand_mod, &hand_state);
 
   delay(250);
 
