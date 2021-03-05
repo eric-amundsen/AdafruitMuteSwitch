@@ -141,9 +141,9 @@ int checkApp() {
 void setup() {
   Keyboard.begin();
 
-  pinMode(AMUTE_SWITCH, INPUT);
-  pinMode(VMUTE_SWITCH, INPUT);
-  pinMode(HAND_SWITCH, INPUT);
+  pinMode(AMUTE_SWITCH, INPUT_PULLUP);
+  pinMode(VMUTE_SWITCH, INPUT_PULLUP);
+  pinMode(HAND_SWITCH, INPUT_PULLUP);
 
 
 }
