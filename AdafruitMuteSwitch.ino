@@ -15,6 +15,14 @@
 #define VMUTE_SWITCH 9
 #define HAND_SWITCH  6
 #define APP_SWITCH   12
+#define OS_SWITCH    3
+
+//#define USE_MAC
+//#define USE_WIN
+
+#if !(defined(USE_WIN) || defined(USE_MAC))
+#error "have to define at least 1 OS"
+#endif
 
 //////////////////////////////////////////////////////////////////////
 // MASKS
@@ -55,7 +63,25 @@
 #define WIN_ZOOM_VMUTE_CHAR 'v'
 #define WIN_ZOOM_HAND_CHAR  'y'
 
-// Mac
+// MAC
+//   Teams
+#define MAC_TEAMS_AMUTE_MOD  SHIFT_MASK | GUI_MASK
+#define MAC_TEAMS_VMUTE_MOD  SHIFT_MASK | GUI_MASK
+#define MAC_TEAMS_HAND_MOD   SHIFT_MASK | GUI_MASK
+
+#define MAC_TEAMS_AMUTE_CHAR 'm'
+#define MAC_TEAMS_VMUTE_CHAR 'o'
+#define MAC_TEAMS_HAND_CHAR  'k'
+
+//   Zoom
+#define MAC_ZOOM_AMUTE_MOD  SHIFT_MASK | GUI_MASK
+#define MAC_ZOOM_VMUTE_MOD  SHIFT_MASK | GUI_MASK
+#define MAC_ZOOM_HAND_MOD   ALT_MASK
+
+#define MAC_ZOOM_AMUTE_CHAR 'a'
+#define MAC_ZOOM_VMUTE_CHAR 'v'
+#define MAC_ZOOM_HAND_CHAR  'y'
+
 
 //////////////////////////////////////////////////////////////////////
 // states to keep track of pin state and create action during transition
@@ -127,7 +153,23 @@ void checkSwitch(int swtch, char chr, int modifier, states *s_ptr) {
 
 // check the switch for windows/mac os
 int checkOS() {
-  return WINDOWS;
+#if defined(USE_MAC) && defined(USE_WIN) 
+  if (digitalRead(OS_SWITCH) == 1) {
+    return MAC;
+  } else {
+    return WINDOWS;
+  }
+#else
+
+#ifdef USE_MAC
+    return MAC;
+#endif
+
+#ifdef USE_WIN
+    return WINDOWS;
+#endif
+
+#endif
 }
 
 int checkApp() {
@@ -139,12 +181,18 @@ int checkApp() {
 }
 
 void setup() {
+
+
   Keyboard.begin();
 
   pinMode(AMUTE_SWITCH, INPUT_PULLUP);
   pinMode(VMUTE_SWITCH, INPUT_PULLUP);
   pinMode(HAND_SWITCH, INPUT_PULLUP);
+  pinMode(APP_SWITCH, INPUT_PULLUP);
 
+#if defined(USE_MAC) && defined(USE_WIN) 
+  pinMode(OS_SWITCH, INPUT_PULLUP);
+#endif
 
 }
 
@@ -154,8 +202,8 @@ void loop() {
   int vmute_char, vmute_mod;
   int  hand_char,  hand_mod;
 
+#ifdef USE_WIN
   if (checkOS() == WINDOWS) {
-
     if (checkApp() == TEAMS) {
       amute_char = WIN_TEAMS_AMUTE_CHAR;
       vmute_char = WIN_TEAMS_VMUTE_CHAR;
@@ -174,6 +222,29 @@ void loop() {
        hand_mod = WIN_ZOOM_HAND_MOD;
      }
   }
+#endif
+
+#ifdef USE_MAC
+  if (checkOS() == MAC) {
+    if (checkApp() == TEAMS) {
+      amute_char = MAC_TEAMS_AMUTE_CHAR;
+      vmute_char = MAC_TEAMS_VMUTE_CHAR;
+       hand_char = MAC_TEAMS_HAND_CHAR;
+
+      amute_mod = MAC_TEAMS_AMUTE_MOD;
+      vmute_mod = MAC_TEAMS_VMUTE_MOD;
+       hand_mod = MAC_TEAMS_HAND_MOD;
+    } else {
+      amute_char = MAC_ZOOM_AMUTE_CHAR;
+      vmute_char = MAC_ZOOM_VMUTE_CHAR;
+       hand_char = MAC_ZOOM_HAND_CHAR;
+
+      amute_mod = MAC_ZOOM_AMUTE_MOD;
+      vmute_mod = MAC_ZOOM_VMUTE_MOD;
+       hand_mod = MAC_ZOOM_HAND_MOD;
+     }
+  }
+#endif
 
   checkSwitch(AMUTE_SWITCH, amute_char, amute_mod, &amute_state);
   checkSwitch(VMUTE_SWITCH, vmute_char, vmute_mod, &vmute_state);
